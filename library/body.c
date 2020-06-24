@@ -32,14 +32,7 @@ body_t *body_init(list_t *shape, double mass, rgb_color_t color) {
     body->forces = list_init(NUM_FORCES, vec_free);
     body->impulses = list_init(NUM_IMP, vec_free);
     body->rem = false;
-    // get init centroid and move centroid back over to 0
-    // vector_t temp_c = polygon_centroid(body->shape);
     body->centroid = polygon_centroid(body->shape);
-    // temp_c = vec_negate(temp_c);
-    // polygon_translate(body->shape, temp_c);
-    // assert(polygon_centroid(body->shape).x == 0.0);
-    // assert(polygon_centroid(body->shape).y == 0.0);
-    // body->centroid = (vector_t){0.0, 0.0};
     body->has_info = false;
     return body;
 }
@@ -122,7 +115,6 @@ void body_set_color(body_t *body, rgb_color_t color) {
 }
 
 void body_set_centroid(body_t *body, vector_t x) {
-    // vector_t old_centroid = body_get_centroid(body);
     polygon_translate(body->shape, vec_subtract(x, body->centroid));
     body->centroid = x;
 }
@@ -136,7 +128,7 @@ void body_set_rotation(body_t *body, double angle) {
     body->orientation = angle;
 }
 
-// whoops deprecated
+// Deprecated
 void body_translate(body_t *body, vector_t diff) {
     polygon_translate(body->shape, diff);
 }
@@ -160,7 +152,7 @@ void body_tick(body_t *body, double dt) {
       vector_t dv = vec_multiply(dt, accel);
       vel_new = vec_add(vel_new, dv);
     }
-    // handle impulses
+    // handle impulses by just adding imp/mass
     for(size_t i = 0; i < list_size(body->impulses); i++){
       vel_new = vec_add(vel_new, vec_multiply(1 / body->mass, *(vector_t *)list_get(body->impulses, i)));
     }

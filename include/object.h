@@ -11,9 +11,8 @@
 #include <string.h>
 #include <math.h>
 
-// object to be stored in 2D map array. only suitable for STATIONARY objects
-// scratch that. just use for all bodies in the map and ignore values for player/alien
-// declared in header so should be able to be accessed externally.
+// Object to be stored in 2D map array. Builds off of body but has other fields
+// for use with map and game.
 typedef struct object{
   body_t *body;
   bool is_open;
@@ -22,14 +21,16 @@ typedef struct object{
   double *coll_extrema;
 } object_t;
 
-// could pass in char *type
+// Initializes off of body.
 object_t *object_init(body_t *body);
 
+// Recalculates min, max in order to keep updated for the moving objects.
 void object_calc_min_max(object_t *o);
 
+// Gets min and maxes of bounds, for use in bounding box calculations.
 double *object_get_min_max(object_t *o);
 
-// should not free the body bc scene will try to free that. or type if same as body info
+// Frees things associated with object that aren't freed elsewhere.
 void object_free(void *o);
 
 #endif // #ifndef __SCENE_H__

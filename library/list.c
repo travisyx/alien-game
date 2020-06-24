@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const int growth_rate = 2;
+// Size increase of list when no space left to add into.
+const int GROWTH_RATE = 2;
 
 typedef struct list {
     void **data;
@@ -24,7 +25,7 @@ list_t *list_init(size_t initial_size, free_func_t freer) {
     return v;
 }
 
-// recently changed so that if freer is null, won't try to free
+// Checks if freer is NULL as well and does not try to free objects.
 void list_free(void *list) {
     if(((list_t *)list)->freer != NULL){
       for (size_t i = 0; i < list_size(list); i++) {
@@ -50,13 +51,13 @@ void *list_get(list_t *list, size_t index) {
 }
 
 void resize(list_t *list) {
-    void **new_data = malloc(growth_rate * list->capacity * sizeof(void *));
+    void **new_data = malloc(GROWTH_RATE * list->capacity * sizeof(void *));
     for (size_t i = 0; i < list->size; i++) {
         new_data[i] = list_get(list, i);
     }
     free(list->data);
     list->data = new_data;
-    list->capacity *= growth_rate;
+    list->capacity *= GROWTH_RATE;
 }
 
 void list_add(list_t *list, void *value) {
@@ -69,6 +70,7 @@ void list_add(list_t *list, void *value) {
     list->size++;
 }
 
+// Helper method to collapse list down given index to start from (of rem. item).
 void collapse(list_t *list, size_t ind) {
     for (size_t i = ind; i < list->size - 1; i++) {
         list->data[i] = list_get(list, i + 1);

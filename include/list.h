@@ -115,6 +115,7 @@ void list_add(list_t *list, void *value);
 */
 void list_clear(list_t *list);
 
+// Swaps two elements in a list.
 void list_swap(list_t *list, int ind1, int ind2);
 
 #endif // #ifndef __LIST_H__

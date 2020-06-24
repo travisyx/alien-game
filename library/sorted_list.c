@@ -1,5 +1,6 @@
  #include "sorted_list.h"
 
+// Initializes a sorted list
 slist_t *sl_init(int size, free_func_t freer){
   slist_t *ans = malloc(sizeof(slist_t));
   // Not going to compile, add a freer
@@ -7,13 +8,13 @@ slist_t *sl_init(int size, free_func_t freer){
   return ans;
 }
 
+// Frees a sorted list
 void sl_free(slist_t *sl){
   list_free(sl->list);
   free(sl);
 }
 
-// assume that item has double priority in struct
-// assume list is full of items
+// Enqueues the item, changing priority if necessary
 void sl_enqueue(slist_t *slist, node_t *item){
   int counter = list_size(slist->list)-1;
   list_add(slist->list, item);
@@ -28,21 +29,23 @@ void sl_enqueue(slist_t *slist, node_t *item){
   }
 }
 
+// Returns the size of the sorted list
 size_t sl_size(slist_t *slist){
   return list_size(slist->list);
 }
 
-// first element w/o removing
+// Peeks the last element without removing
 void *sl_peek(slist_t *slist){
   // return (void *) list_get(slist->list, 0);
   return (void *) list_get(slist->list, sl_size(slist) - 1);
 }
 
-// rem 0 element
+// Removes the 0th index element
 void *sl_dequeue(slist_t *slist){
   return list_remove(slist->list, sl_size(slist)-1);
 }
 
+// Compares if two nodes are the same
 bool node_compare(node_t *first, node_t *second){
   vector_t one = body_get_centroid(first->node->body);
   vector_t two = body_get_centroid(second->node->body);
@@ -51,7 +54,7 @@ bool node_compare(node_t *first, node_t *second){
   return false;
 }
 
-// be sure to put in correct place in list now
+// Changes the priority of an element of the sorted list
 void sl_change_priority(slist_t *slist, node_t *item, double priority){
   size_t ind = 0;
   item->priority = priority;
@@ -66,7 +69,7 @@ void sl_change_priority(slist_t *slist, node_t *item, double priority){
   sl_enqueue(slist, item);
 }
 
-// prints the centroid of each node in the list. MUST have a list of nodes
+// Prints the centroid of each node in the list. MUST have a list of nodes
 void sl_print(slist_t *slist){
   list_t *vals = slist->list;
   printf("new path\n");

@@ -188,8 +188,10 @@ void render_door_image(vector_t location);
 // frees image texture
 void image_free();
 
+// prints win message. yay!
 void win_message();
 
+// prints lose message. try again!
 void lose_message();
 
 #endif // #ifndef __SDL_WRAPPER_H__

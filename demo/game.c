@@ -18,8 +18,8 @@
 // WASD to shoot
 // 'e' change to explosive bullets
 // 'g' change to grav gun // deprecated :(
-////////////////////////////////////////
-// frame bounds, should be 4x:3y
+//////////////////////////////PARAMS and CONSTANTS//////////////////////////////
+// Frame bounds, should be 4x:3y
 const double WIN_DIM_X = 500.0;
 const double WIN_DIM_Y = 500.0;
 const vector_t MIN = (vector_t){0, 0};
@@ -29,46 +29,37 @@ const double VIEW_DEV = .5;
 const double VIEW_ALL = 1;
 const double PLAYER_VEL = 100;
 const double PLAYER_ANG = M_PI / 2;
-// const double STAMINA_RATE = .2;
-// const double STAMINA_RATE = .05;
 const double STAMINA_RATE = .03;
-// dev stamina
-// const double STAMINA_RATE = 0;
 const int MAX_STAMINA = 100;
 const int MIN_STAMINA = 50;
 double STAMINA = 100;
-//
+
 int NUM_TOTAL_BULLETS;
 int NUM_EXPLOSIVES = 5;
 const rgb_color_t C_EXP = {255, 0, 0}; // red
 const double B_ELAS = 10;
-// grav gun deprecated :(
-// int NUM_GRAV_GUN = 5;
-// const double B_DRAG = 10;
-// const rgb_color_t C_GRAV = {0, 0 , 0}; // black
 const double WIDTH_BULLET = 2;
 const double LENGTH_BULLET = 4;
-const int BULLET_SIDES = 4; // rect
-// const char *BULLET = "bullet";
+const int BULLET_SIDES = 4; // Rectangle
 const double B_MASS = 20;
 const double B_VEL = 200;
 const int STALK_RADIUS_EASY = 20;
 const int STALK_RADIUS_MEDIUM = 15;
 const int STALK_RADIUS_HARD = 10;
-// e for explosive, g for grav gun, .. gets changed. will also use this for setting body type and checking
+// 'e' for explosive, 'g' for grav gun, .. gets changed.
 char *BULLET_TYPE = "e";
 body_t *BULLET;
 map_t *map;
 
 double PLAYER_ANGLE = 0.0;
 
+// Clean up
 void end_game(map_t * map){
   map_free(map);
-  // object free afterward
   exit(0);
 }
 
-// regain stamina faster when hiding, but still regain some when standing still
+// Regain stamina faster when hiding, but still regain some when standing still. Otherwise, lose stamina.
 void set_stamina(map_t *map){
   body_t *player = map->player->body;
   vector_t cur_vel = body_get_velocity(player);
@@ -87,8 +78,10 @@ void set_stamina(map_t *map){
   }
 }
 
+// Make a bullet and assign to global variable (only shooting one at a time).
+// Bullet at center of screen, length by width w/ velocity in dir angle.
 void make_bullet(){
-  // make bullet
+  // Make bullet's points
   list_t *points = list_init(BULLET_SIDES, vec_free);
   vector_t *temp1 = malloc(sizeof(vector_t));
   assert(temp1 != NULL);
@@ -106,7 +99,7 @@ void make_bullet(){
   assert(temp4 != NULL);
   *temp4 = (vector_t){-LENGTH_BULLET / 2.0, WIDTH_BULLET / 2.0};
   list_add(points, temp4);
-  // set color, name
+  // Set color, name
   rgb_color_t col;
   char *name = malloc(10*sizeof(char));
   strcpy(name, BULLET_TYPE);
@@ -114,35 +107,37 @@ void make_bullet(){
   BULLET = body_init_with_info(points, B_MASS, col, name, free);
 }
 
-// creates a bullet at center of screen, length by width w/ vel in dir angle
-// if one type bullet out, will shoot other if still left.
+// Spawns bullet, moves to correct position/orientation and adds collisions.
 void shoot(map_t *map, double angle){
-  NUM_TOTAL_BULLETS = NUM_EXPLOSIVES;// + NUM_GRAV_GUN; // can update if more types
+  NUM_TOTAL_BULLETS = NUM_EXPLOSIVES;
   if(NUM_TOTAL_BULLETS > 0){
     make_bullet();
     body_t *bullet = BULLET;
-    // set centroid, rotate, velocity
+    // Set centroid, rotate, velocity
     body_set_centroid(bullet, body_get_centroid(map->player->body));
     body_set_rotation(bullet, angle);
     vector_t vel = vec_multiply(B_VEL, vec_rotate((vector_t){1,0}, angle));
     body_set_velocity(bullet, vel);
-      NUM_EXPLOSIVES--;
-      create_physics_collision(map->scene, B_ELAS, bullet, map->alien->body, 3);
+    // Get rid of bullet and bounce alien back if they collide
+    NUM_EXPLOSIVES--;
+    create_physics_collision(map->scene, B_ELAS, bullet, map->alien->body, 3);
     for(size_t i = 0; i < scene_bodies(map->scene); i++){
       body_t *body = scene_get_body(map->scene, i);
-      // get rid of bullet if it hits something else
+      // Get rid of bullet if it hits something else
       if(strcmp((char *)body_get_info(body), "alien") != 0 && strcmp((char *)body_get_info(body), "player") != 0
       && strcmp((char *)body_get_info(body), "g") != 0 && strcmp((char *)body_get_info(body), "e") != 0 ){
         create_destructive_collision(map->scene, bullet, body, 1);
       }
     }
-    // show it afterwards
+    // Show it afterwards
     scene_add_body(map->scene, bullet);
-    // update text displaying number of bullets left
+    // Update text displaying number of bullets left
     update_bullets(NUM_EXPLOSIVES);
   }
 }
 
+// Handles key presses for motion, shooting. Movement velocity is constant and
+// then is halved once stamina reaches 0.
 void key_handle(scene_t *scene, char key, key_event_type_t type, double dt, void *aux){
   body_t *player = map->player->body;
   vector_t vx, vy;
@@ -154,7 +149,7 @@ void key_handle(scene_t *scene, char key, key_event_type_t type, double dt, void
     vx = vec_multiply(.5, (vector_t){PLAYER_VEL, 0});
     vy = vec_multiply(.5, (vector_t){0, PLAYER_VEL});
   }
-  // if want speed to scale down with stamina
+  // Uncomment below if speed to scale down with stamina is desired
   // vector_t vx = vec_multiply(STAMINA / 100.0, (vector_t){PLAYER_VEL, 0});
   // vector_t vy = vec_multiply(STAMINA / 100.0, (vector_t){0, PLAYER_VEL});
   if (type == KEY_PRESSED) {
@@ -201,7 +196,8 @@ void key_handle(scene_t *scene, char key, key_event_type_t type, double dt, void
   }
 }
 
-// returns 1 if image is in frame of window, 0 if it is not
+// True if image is in frame of window, false if it is not. To avoid spawning
+// images that are not needed.
 bool image_in_frame(map_t *map, body_t *image_body){
   vector_t player_centroid = body_get_centroid(map->player->body);
   vector_t image_centroid = body_get_centroid(image_body);
@@ -215,6 +211,7 @@ bool image_in_frame(map_t *map, body_t *image_body){
   }
 }
 
+// Renders images for hiding spots.
 void image_hiding_spots(map_t *map){
   list_t *spots = map->hiding_spots;
   for(size_t i = 0; i < list_size(spots); i++){
@@ -231,6 +228,7 @@ void image_hiding_spots(map_t *map){
   }
 }
 
+// Renders images for coins.
 void image_coins(map_t *map){
   list_t *coins = map->coins;
   for(size_t i = 0; i < list_size(coins); i++){
@@ -242,6 +240,7 @@ void image_coins(map_t *map){
   }
 }
 
+// Renders images for walls.
  void image_walls(map_t *map){
    list_t *walls = map->walls;
    for(size_t i = 0; i < list_size(walls); i++){
@@ -253,6 +252,7 @@ void image_coins(map_t *map){
    }
  }
 
+// Renders images for doors.
  void image_doors(map_t *map){
    list_t *doors = map->doors;
    for(size_t i = 0; i < list_size(doors); i++){
@@ -264,52 +264,55 @@ void image_coins(map_t *map){
    }
  }
 
+// Setup and main loop.
 int main(){
+  // Initialize everything:
   map = map_init();
   sdl_init(MIN, MAX);
   vector_t center = (vector_t){WIN_DIM_X, WIN_DIM_Y};
   body_set_centroid(map->player->body, center);
-  // could randomize this
   body_set_centroid(map->alien->body, vec_add(center, (vector_t){100, 100}));
-  // body_set_centroid(map->alien->body, vec_add(VEC_ZERO, (vector_t){30, 0}));
   alien_t *alien = ai_init_bounds(map);
   sdl_update_zoom(VIEW_PLAYER);
   sdl_on_key(key_handle);
   message_init(); // initialize TTF and font
   images_init(); // initialize image surface and textures
-    while (!sdl_is_done(map->scene, NULL)){
-      double dt = time_since_last_tick();
-      set_stamina(map);
-      ai_stalk(map, alien, STALK_RADIUS_MEDIUM, dt);
-      sdl_update_center(body_get_centroid(map->player->body));
-      sdl_clear();
-      if(map_lose(map)){
-        while (!sdl_is_done(map->scene, NULL)){
-          sdl_clear();
-          lose_message();
-          sdl_render_scene(map->scene);
-        }
+  // While game is still running, update stamina and player velocity, direct
+  // the ailien, update sdl frame, check win/loss conditions, render text and
+  // images.
+  while (!sdl_is_done(map->scene, NULL)){
+    double dt = time_since_last_tick();
+    set_stamina(map);
+    ai_stalk(map, alien, STALK_RADIUS_MEDIUM, dt);
+    sdl_update_center(body_get_centroid(map->player->body));
+    sdl_clear();
+    if(map_lose(map)){
+      while (!sdl_is_done(map->scene, NULL)){
+        sdl_clear();
+        lose_message();
+        sdl_render_scene(map->scene);
       }
-      else if(map_win(map)){
-        while (!sdl_is_done(map->scene, NULL)){
-          sdl_clear();
-          win_message();
-          sdl_render_scene(map->scene);
-        }
-      }
-      map_tick(map, dt);
-      render_player_image(PLAYER_ANGLE);
-      render_alien_image(body_get_centroid(map->alien->body));
-      image_hiding_spots(map);
-      image_coins(map);
-      image_walls(map);
-      image_doors(map);
-      render_text(0, 0);
-      sdl_render_scene(map->scene);
     }
+    else if(map_win(map)){
+      while (!sdl_is_done(map->scene, NULL)){
+        sdl_clear();
+        win_message();
+        sdl_render_scene(map->scene);
+      }
+    }
+    map_tick(map, dt);
+    render_player_image(PLAYER_ANGLE);
+    render_alien_image(body_get_centroid(map->alien->body));
+    image_hiding_spots(map);
+    image_coins(map);
+    image_walls(map);
+    image_doors(map);
+    render_text(0, 0);
+    sdl_render_scene(map->scene);
+  }
+  // Clean up.
   image_free();
   message_free();
-  // if end by X
   end_game(map);
   ai_free(alien);
 }

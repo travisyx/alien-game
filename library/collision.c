@@ -1,8 +1,7 @@
 #include "collision.h"
 
-// Index returned of 0 is min x, index 1 is max x, 2 is min y, 3 is max y
-// going to call and add to object struct
 double *get_mins_and_maxes(list_t *inp){
+  // Index returned of 0 is min x, index 1 is max x, 2 is min y, 3 is max y
   double *ans = malloc(4 * sizeof(double));
   double min_x, min_y, max_x, max_y;
   min_x = min_y = INFINITY;
@@ -28,9 +27,8 @@ double *get_mins_and_maxes(list_t *inp){
   return ans;
 }
 
-// written to get around querying alien and player and other objects every single time...
-// ONLY PRELIMINARY!!! if true, need to call find_collision on actual bodies
 bool object_test_bounding_box(object_t *one, object_t *two){
+  // Written to get around querying alien and player and other objects every single time...
   double *temp1 = object_get_min_max(one);
   double *temp2 = object_get_min_max(two);
   if((temp1[0] <= temp2[0] && temp2[0] <= temp1[1]) ||
@@ -43,8 +41,8 @@ bool object_test_bounding_box(object_t *one, object_t *two){
   return false;
 }
 
-// Tests if two objects' bounding are within each other
 bool body_test_bounding_box(list_t *body_one, list_t *body_two){
+  // Tests if two objects' bounding are within each other
   double *temp1 = get_mins_and_maxes(body_one);
   double *temp2 = get_mins_and_maxes(body_two);
   if((temp1[0] <= temp2[0] && temp2[0] <= temp1[1]) ||
@@ -61,7 +59,10 @@ bool body_test_bounding_box(list_t *body_one, list_t *body_two){
   return false;
 }
 
+// Helper method to get all perpendicular vectors to both shapes for the
+// separating axis method
 list_t *get_perp(list_t *shape1, list_t *shape2){
+  // Gets the perpendicular vectors for the separating axis method
   list_t *all_perpendicular = list_init(list_size(shape1)+list_size(shape2), vec_free);
   int counter = 0;
   for(size_t i = 0; i < list_size(shape1); i++){
@@ -94,8 +95,9 @@ list_t *get_perp(list_t *shape1, list_t *shape2){
   return all_perpendicular;
 }
 
-// index 0 is min scale, 1 is max scale (project inp onto perp)
+
 double get_max_scale(list_t *inp, vector_t *perp){
+  // Index 0 is min scale, 1 is max scale (project inp onto perp)
   double max_scale = -INFINITY;
   for(size_t j = 0; j < list_size(inp); j++){
     vector_t *vec_one = (vector_t *) list_get(inp, j);
@@ -166,8 +168,8 @@ collision_info_t find_collision(list_t *shape1, list_t *shape2){
 }
 
 
-// for objects only; skips bounding box calc
 collision_info_t object_find_collision(list_t *shape1, list_t *shape2){
+  // For objects only; skips bounding box calc
   collision_info_t info;
   double scale = INFINITY;
   vector_t axis = (vector_t) {0,0};

@@ -14,10 +14,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-// generally will not redo scene methods--to do that, get the scene and then
-// access that way! only adding on methods that will be added functionality for
-// a map.
-
 /**
  * A scene that is organized into player, alien, walls, doors, hiding spots.
  * Intended to allow for more intuitive use of scene for our game. Declared here
@@ -39,6 +35,7 @@
      list_t *struct_nodes;
  } map_t;
 
+// A node that builts off of object_t, for pathfinding purposes.
  typedef struct node {
    object_t *node;
    double priority;
@@ -49,79 +46,190 @@
    size_t num_neighbors;
  } node_t;
 
- ////////////////////// some methods to make backing array easier to access--could abstract this out if wanted?
+ ////////////////////// Some methods to make backing array easier to access--could abstract this out if wanted?
 
+/**
+ * Initializes the backing array with a certain width, height, and free function.
+ *
+ * @param height the height of the array
+ * @param width the width of the array
+ * @param freer the free function
+ * @return the initialized array
+ */
  list_t *arr_init(int height, int width, free_func_t freer);
 
+ /**
+  * Returns a vector_t corresponding to the original array size
+  *
+  * @param arr the backing array
+  * @return a vector_t corresponding to the size of the array
+  */
  vector_t arr_size(list_t *arr);
 
+ /**
+  * Gets a specified element of the backing array (row, column)
+  *
+  * @param arr the backing array
+  * @param r the row of the desired element
+  * @param c the column of the desired element
+  * @return the element in the backing array
+  */
  void *arr_get(list_t *arr, int r, int c);
 
- // assumes that array is already full/there is something at this position already
- // returns the old object at this position
- void *arr_put(list_t *arr, int r, int c, void *new_obj);
 
- // returns body at location and puts a node in its place
-// void *arr_remove(list_t *arr, int r, int c);
+ /**
+  * Replaces the element at the array with new_obj. Assumes an element in the array
+  *
+  * @param arr the backing array
+  * @param r the row of the desired element
+  * @param c the column of the desired element
+  * @param new_obj the element to be placed in the backing array
+  * @return the old element in the backing array
+  */
+  void *arr_put(list_t *arr, int r, int c, void *new_obj);
 
-
- // return the center of the square rep by given index
+ /**
+  * Returns the center of the corresponding square (in pixel representation)
+  *
+  * @param arr the backing array
+  * @param r the row of the desired element
+  * @param c the column of the desired element
+  * @return the coordinates of the pixel representation
+  */
  vector_t map_pos_from_ind(map_t *map, int r, int c);
 
- // position given in x,y where 0,0 is top left, 0, width is top right
- // returns in row, col
- vector_t map_ind_from_pos(map_t *map, vector_t position);
+ /**
+  * Returns the map index of the pixel
+  *
+  * @param arr the backing array
+  * @param position the position in pixel representation
+  * @return the position of the backing array element
+  */
+vector_t map_ind_from_pos(map_t *map, vector_t position);
 
- //////////////////////////////////////////////////
-
+  /**
+   * Initializes a node with a specified object_t and priority
+   *
+   * @param node the object
+   * @param priority the priority
+   * @return the initialized node
+   */
  node_t *node_init(object_t *node, double priority);
 
+ /**
+  * Initializes the map with its instance variables
+  *
+  * @return the initialized map
+  */
  map_t *map_init();
 
- // triangle so can tell which direction facing. will start pointing to the left
+ /**
+  * Initializes the player
+  *
+  * @return the player
+  */
  body_t *make_player();
 
+ /**
+  * Initializes the alien
+  *
+  * @return the alien
+  */
  body_t *make_alien();
 
+ /**
+  * Frees the map and its instance variables
+  *
+  * @param map the map to be freed
+  */
  void map_free(map_t *map);
 
- // should only be called at the beginning. assumes that objects at this time are
- // staying in place and not being removed/added i.e. FINAL state of map.
+  /**
+   * Populates the lists with the desired quantities. Should only be called at the beginning
+   *
+   * @param map the map with the instance variables to be initialized
+   */
  void populate_lists(map_t *map);
 
- /////////////////////////////////////////////////
-
- // when player collides with coin, remove the coin and add value to player's purse
+ /**
+  * Collects a coin from the map
+  *
+  * @param map the map
+  */
  void map_collect_coin(map_t *map);
 
- // true if transaction can go through. false if not enough money.
- // if true, will take money out of purse
+ /**
+  * Determines if the player has enough currency to buy the desired item
+  *
+  * @param map the map
+  * @param cost the cost of the desired item
+  * @return a boolean that is true if the player has enough coins, false otherwise
+  */
  bool spend_money(map_t *map, int cost);
 
- // touch you buy..spends money here
- // will just leave player on top of hiding spot. considered hiding if centroid still in
- // once collides, transports player centroid onto hiding spot centroid
+ /**
+  * Teleports the player to the center of the hiding spot
+  *
+  * @param map the map
+  */
  void map_hide_player(map_t *map);
 
+ /**
+  * Removes the player from the hiding spot
+  *
+  * @param map the map
+  */
  void map_unhide_player(map_t *map);
 
+ /**
+  * Determines if the player is hiding or not
+  *
+  * @param map the map
+  * @return a boolean that is true if the player is hiding, false otherwise
+  */
  bool is_hiding(map_t *map);
 
+ /**
+  * Opens the door if the player has enough coins
+  *
+  * @param map the map
+  */
  void open_door(map_t *map);
 
- // if player is colliding with door and can spend money, returns yes to win
+ /**
+  * Tests if the door is open and the player is colliding with it
+  *
+  * @param map the map
+  * @return a boolean that is true if the above conditions are met, false otherwise
+  */
  bool map_win(map_t *map);
 
- // checks if player and alien colliding, if yes, then lose.
+ /**
+  * Tests if the player and alien are colliding
+  *
+  * @param map the map
+  * @return a boolean that is true if the above condition is met, false otherwise
+  */
  bool map_lose(map_t *map);
 
- /////////////// collisions /////////////////////////
+ /**
+  * Tests if two objects are colliding using collision.c framework and
+  * precalculated min and maxes for bounding box.
+  *
+  * @param o1 the first object to be tested
+  * @param o2 the second object to be tested
+  * @return a boolean true if the objects are colliding, false otherwise
+  */
  bool object_collision(object_t *o1, object_t *o2);
 
- // don't let player go into objects it shouldn't be able to go into
+ /**
+  * Disallows a player from being where they shouldn't be
+  *
+  * @param map the map
+  */
  void bounce(map_t *map);
 
- ////////////////////////////////////////////////
+ /////////////////////////////////
 
  // some specialized methods for adding specific types
 

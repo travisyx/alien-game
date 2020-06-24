@@ -28,8 +28,8 @@ double *get_extrema(list_t *inp){
   return ans;
 }
 
-// body should already have info!!
 object_t *object_init(body_t *body){
+  // Body should already have info!!
   object_t *o = malloc(sizeof(object_t));
   o->body = body;
   o->is_open = false;
@@ -53,8 +53,8 @@ double *object_get_min_max(object_t *o){
   return o->coll_extrema;
 }
 
-// assumes that there is coll_extrema...no reason why there should not be upon free, so...
 void object_free(void *o){
+  // Assumes that there is coll_extrema...no reason why there should not be upon free, so...
   free(((object_t *)o)->coll_extrema);
   free(o);
 }

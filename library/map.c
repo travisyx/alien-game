@@ -78,7 +78,7 @@ void node_free(void *node){
   free(((node_t *)node));
 }
 
-////////////////////// some methods to make backing array easier to access--could abstract this out if wanted?
+///////// some methods to make backing array easier to access--could abstract this out if wanted?//////////////
 vector_t arr_size(list_t *arr){
   vector_t size;
   size.x = list_size(arr);
@@ -86,7 +86,6 @@ vector_t arr_size(list_t *arr){
   return size;
 }
 
-// assuming
 list_t *arr_init(int height, int width, free_func_t freer){
   list_t *ans = list_init(height, list_free);
   for(size_t i = 0; i < height; i++){
@@ -128,6 +127,7 @@ vector_t map_ind_from_pos(map_t *map, vector_t position){
   return (vector_t){(int) position.y/(10), (int) position.x/(10)};
 }
 
+// helper.
 double shortest_dist(vector_t src, vector_t dest, vector_t obstacle){
   double num = fabs((dest.y-src.y)*obstacle.x - (dest.x-src.x)*obstacle.y + dest.x*src.y - dest.y*src.x);
   double den = vec_distance(dest, src);
@@ -136,7 +136,6 @@ double shortest_dist(vector_t src, vector_t dest, vector_t obstacle){
 
 //////////////////////////////////////////////////
 // check if hiding spot is in straight line btwn src, dest.
-// TODO: should also check for walls.
 bool hiding_in_vec(vector_t src, vector_t dest, list_t *hiding){
   for(size_t i = 0; i < list_size(hiding); i++){
     object_t *hide = (object_t *) list_get(hiding, i);
@@ -455,7 +454,6 @@ bool spend_money(map_t *map, int cost){
 
 // touch you buy..spends money here
 // will just leave player on top of hiding spot. considered hiding if centroid still in
-// once collides, transports player centroid onto hiding spot centroid
 void map_hide_player(map_t *map){
   if(HIDING == false){
     list_t *spots = map->hiding_spots;
@@ -707,7 +705,7 @@ object_t *map_make_wall(map_t *map){
   return wall;
 }
 
-// creates the walls given a coordinate of the 2D-array
+// creates a wall given coordinates of the 2D-array
 void create_walls(map_t *map, size_t r, size_t c){
   object_t *wall = map_make_wall(map);
   body_set_centroid(wall->body, map_pos_from_ind(map, r, c));
@@ -716,7 +714,8 @@ void create_walls(map_t *map, size_t r, size_t c){
   object_calc_min_max(wall);
 }
 
-// generates walls around the boarder of map and inside it
+// generates walls around the boarder of map and inside of it. hard coded right
+// now, could use maze generation algorithm in future.
 void map_add_walls(map_t *map){
   for(size_t r = 0; r < HEIGHT; r++){
     for(size_t c = 0; c < WIDTH; c++){
@@ -814,14 +813,14 @@ void map_add_walls(map_t *map){
   }
 }
 
-// replace wall..probably only used to place doors.
+// replace wall..only used to place doors.
  void map_replace_wall(map_t *map, int r, int c, object_t *new_ob){
   object_t *wall = (object_t *)arr_put(map->backing_array, r, c, new_ob);
   body_free(wall->body);
   object_free(wall);
 }
 
-// add door to spot in 2d array, get rid of wall if already there. do nothing if
+// add door to spot in 2d array, get rid of wall if already there.
 object_t *map_make_door(map_t *map){
   body_t *box = make_box(C_DOOR);
   char *obj_name = malloc(10*sizeof(char));
@@ -831,9 +830,7 @@ object_t *map_make_door(map_t *map){
   return door;
 }
 
-// spawn randomly on perimeter, or at set locations? should also assign one to be winning doors, and assign costs (random or set?)
-// scratch that...just two doors that both are win
-// door 0 is left, 1 is right
+// door 0 is left, 1 is right. spawned randomly along side walls.
 void map_add_doors(map_t *map){
   srand(time(0));
   int val1 = rand() % ((int)((double) HEIGHT - 1)) + 1;

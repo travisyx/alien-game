@@ -41,14 +41,14 @@ void aux_ception_free(void *aux){
 void aux_free(void *ans){
   aux_t *aux = (aux_t *)ans;
   list_free(aux->bodies);
-  // going to assume that if no func, don't want anything freed.
+  // Assumes that if no func, don't want anything freed.
   if(aux->aux == NULL){
     free_nothing(aux->aux);
   }
   else if(aux->freer == NULL){
     free_nothing(aux->aux);
   }
-  else{ // void *aux could be an aux_t...aux-ception
+  else{
     free_func_t freer = aux->freer;
     freer(aux->aux);
   }
@@ -100,7 +100,7 @@ void spring(void *aux){
   vector_t b1 = body_get_centroid(body_1);
   vector_t b2 = body_get_centroid(body_2);
   double k = data->constant;
-  // positive if b1 is higher than b2
+  // Positive if b1 is higher than b2
   vector_t *force_on_one = malloc(sizeof(vector_t));
   *force_on_one = (vector_t){-k*(b1.x - b2.x), -k*(b1.y - b2.y)};
   vector_t *force_on_two = malloc(sizeof(vector_t));
@@ -117,48 +117,48 @@ void create_spring(scene_t *scene, double k, body_t *body1, body_t *body2) {
   scene_add_bodies_force_creator(scene, (force_creator_t)spring, aux, bodies, (free_func_t)aux_free);
 }
 
-// id = 1
 void drag(void *aux) {
-    aux_t *data = (aux_t *)aux;
-    body_t *body = (body_t *)list_get(data->bodies, 0);
-    double gamma = data->constant;
-    vector_t velocity = body_get_velocity(body);
-    vector_t *force = malloc(sizeof(vector_t));
-    *force = vec_multiply(gamma, vec_negate(velocity));
-    body_add_force(body, force);
+  // id = 1
+  aux_t *data = (aux_t *)aux;
+  body_t *body = (body_t *)list_get(data->bodies, 0);
+  double gamma = data->constant;
+  vector_t velocity = body_get_velocity(body);
+  vector_t *force = malloc(sizeof(vector_t));
+  *force = vec_multiply(gamma, vec_negate(velocity));
+  body_add_force(body, force);
 }
 
-// // id = 2, drag will fade to gamma = 1
 void drag_fade(void *aux) {
-    aux_t *data = (aux_t *)aux;
-    if(data->constant > 0){
-      data->constant = data->constant - DRAG_REGEN;
-    }
-    else{
-      return;
-    }
-    body_t *body = (body_t *)list_get(data->bodies, 0);
-    double gamma = data->constant;
-    vector_t velocity = body_get_velocity(body);
-    vector_t *force = malloc(sizeof(vector_t));
-    *force = vec_multiply(gamma, vec_negate(velocity));
-    body_add_force(body, force);
+  // id = 2, drag will fade to gamma = 1
+  aux_t *data = (aux_t *)aux;
+  if(data->constant > 0){
+    data->constant = data->constant - DRAG_REGEN;
+  }
+  else{
+    return;
+  }
+  body_t *body = (body_t *)list_get(data->bodies, 0);
+  double gamma = data->constant;
+  vector_t velocity = body_get_velocity(body);
+  vector_t *force = malloc(sizeof(vector_t));
+  *force = vec_multiply(gamma, vec_negate(velocity));
+  body_add_force(body, force);
 }
 
 void create_drag(scene_t *scene, double gamma, body_t *body, int id) {
-    list_t *bodies = list_init(1, (free_func_t)(free_nothing));
-    list_add(bodies, body);
-    aux_t *aux = aux_init(bodies, gamma);
-    if(id == 1){
-      scene_add_bodies_force_creator(scene, (force_creator_t)drag, aux, bodies, (free_func_t)aux_free);
-    }
-    else if(id == 2){
-      scene_add_bodies_force_creator(scene, (force_creator_t)drag_fade, aux, bodies, (free_func_t)aux_free);
-    }
+  list_t *bodies = list_init(1, (free_func_t)(free_nothing));
+  list_add(bodies, body);
+  aux_t *aux = aux_init(bodies, gamma);
+  if(id == 1){
+    scene_add_bodies_force_creator(scene, (force_creator_t)drag, aux, bodies, (free_func_t)aux_free);
+  }
+  else if(id == 2){
+    scene_add_bodies_force_creator(scene, (force_creator_t)drag_fade, aux, bodies, (free_func_t)aux_free);
+  }
 }
 
-// this is a "force_creator_t", will be called each tick as such
 void collision(void *aux){
+  // This is a "force_creator_t", will be called each tick as such
   aux_t *data = (aux_t *) aux; //
   collision_handler_t func = data->handler;
   body_t *body1 = (body_t *) list_get(data->bodies, 0);
@@ -166,7 +166,6 @@ void collision(void *aux){
   list_t *pts1 = body_get_shape(body1);
   list_t *pts2 = body_get_shape(body2);
   collision_info_t coll = find_collision(pts1, pts2);
-  // get shape returns COPIES!!!
   list_free(pts1);
   list_free(pts2);
   if(coll.collided){
@@ -192,19 +191,17 @@ void create_collision(scene_t *scene, body_t *body1, body_t *body2, collision_ha
   scene_add_bodies_force_creator(scene, (force_creator_t)collision, new_aux, bodies, (free_func_t)aux_free);
 }
 
-// id = 2
 void destroy(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // id = 2
   body_remove(body1);
   body_remove(body2);
 }
 
-// id = 1, destroys first body put in when collides
 void destroy_one(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // id = 1, destroys first body put in when collides
   body_remove(body1);
-  // body_remove(body2);
 }
 
-// very redundant aux struct. we know.
 void create_destructive_collision(scene_t *scene, body_t *body1, body_t *body2, int id){
   list_t *bodies = list_init(2, (free_func_t)(free_nothing));
   list_add(bodies, body1);
@@ -218,8 +215,8 @@ void create_destructive_collision(scene_t *scene, body_t *body1, body_t *body2, 
   }
 }
 
-// id = 1
 void impulse(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // id = 1
   aux_t *data = (aux_t *)aux;
   double elas = data->constant;
   double mass1 = body_get_mass(body1);
@@ -246,9 +243,9 @@ void impulse(body_t *body1, body_t *body2, vector_t axis, void *aux){
   body_add_impulse(body2, neg_imp);
 }
 
-// assumes input is ball and brick, and gets rid of whichever one is the brick
-// id = 2
 void destroy_brick(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // Assumes input is a ball and brick and gets rid of whichever one is the brick
+  // id = 2
   aux_t *data = (aux_t *)aux;
   double elas = data->constant;
   double mass1 = body_get_mass(body1);
@@ -280,9 +277,9 @@ void destroy_brick(body_t *body1, body_t *body2, vector_t axis, void *aux){
   }
 }
 
-// assumes input is bullet, then alien. destroys bullet. explosive
-// id = 3
 void bullet_explosive(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // Assumes input is bullet then alien. Destroys bullet.
+  // id = 3
   aux_t *data = (aux_t *)aux;
   double elas = data->constant;
   double mass1 = body_get_mass(body1);
@@ -314,9 +311,9 @@ void bullet_explosive(body_t *body1, body_t *body2, vector_t axis, void *aux){
   }
 }
 
-// assumes input is bullet, then alien. destroys bullet. adds fading drag to alien
-// id = 4
 void bullet_gravity(body_t *body1, body_t *body2, vector_t axis, void *aux){
+  // Assumes input is bullet then alien. Destroys bullet.
+  // id = 4
   aux_t *data = (aux_t *)aux;
   double gamma = data->constant;
   scene_t *scene = data->scene;

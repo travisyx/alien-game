@@ -35,7 +35,7 @@ typedef struct aux {
     scene_t *scene;
 } aux_t;
 
-// for use retrieving addtl aux inside when making own collision
+// For use retrieving addtl aux inside when making own collision
 void *aux_get_aux(aux_t *aux);
 
 /**
@@ -43,16 +43,17 @@ void *aux_get_aux(aux_t *aux);
 */
 aux_t *aux_init(list_t *bodies, double constant);
 
-// set the func; not incl. in init bc don't want to do for the actual forces
+// Set the collision handler func; not incl. in init bc don't want to do for
+// actual forces.
 void aux_set_handler(aux_t *aux, collision_handler_t func);
 
 // ""
 void aux_set_aux(aux_t *aux, void *info);
 
-// freer for void * aux
+// Freer for void * aux
 void aux_set_freer(aux_t *aux, free_func_t freer);
 
-// to free aux_t inside aux_t since bodies are shared.
+// To free aux_t inside aux_t since bodies are shared.
 void aux_ception_free(void *aux);
 
 /**
@@ -64,15 +65,6 @@ void aux_free(void *ans);
 * Frees nothing. wow.
 */
 void free_nothing(void *thing);
-
-// Creates the force_creator_t for gravitational force
-void gravity(void *aux);
-
-// Creates the force_creator_t for spring forces
-void spring(void *aux);
-
-// Creates the force_creator_t for drag forces
-void drag(void *aux);
 
 /**
  * Adds a force creator to a scene that applies gravity between two bodies.
@@ -152,9 +144,6 @@ void create_collision(
  */
 void create_destructive_collision(scene_t *scene, body_t *body1, body_t *body2, int id);
 
-
-void impulse(body_t *body1, body_t *body2, vector_t axis, void *aux);
-
 /**
  * Adds a force creator to a scene that applies impulses
  * to resolve collisions between two bodies in the scene.
@@ -180,6 +169,5 @@ void create_physics_collision(
     int id
 );
 
-void destroy_brick(body_t *body1, body_t *body2, vector_t axis, void *aux);
 
 #endif // #ifndef __FORCES_H__

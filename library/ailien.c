@@ -7,9 +7,9 @@ const double VEL_STALK = 50;
 // const double VEL_STALK = 400;
 const double VEL_CHASE = 75;
 const int MAX_PATH = 3;
-// const vector_t NOT_CHASING_PLAYER = (vector_t){-4000, -4000}
 const int MAX_NODES = 10000;
 
+// Computes the diagonal distance heuristic between two nodes based on their centroids.
 double diagonal_distance(node_t *start, node_t *end){
   vector_t pos_start = body_get_centroid(start->node->body);
   vector_t pos_end = body_get_centroid(end->node->body);
@@ -20,11 +20,15 @@ double diagonal_distance(node_t *start, node_t *end){
   return min * pow(2, 0.5) + max-min;
 }
 
-// A*
+// A*. Uses priority queue defined by sorted_list. Reverses list ordering at end.
 list_t *ai_star(map_t *map, node_t *start, node_t *end){
+  // Stores which nodes have been added into the queue so far.
   bool open_arr[100][100];
+  // g represents distance from start to current node
   double g_vals[100][100];
+  // Equivalent to f, the heuristic combining dist from start and dist to end
   double priorities[100][100];
+  // Stores parents; reinit every time so don't have to clear a field in node
   node_t *parents[100][100];
   for(int i = 0; i < 100; i++){
     for(int j = 0; j < 100; j++){
@@ -34,6 +38,7 @@ list_t *ai_star(map_t *map, node_t *start, node_t *end){
       parents[i][j] = NULL;
     }
   }
+  // Adds first node to the queue and init its g
   slist_t *open = sl_init(MAX_NODES, NULL);
   sl_enqueue(open, start);
   vector_t start_ind = map_ind_from_pos(map, body_get_centroid(start->node->body));
@@ -41,15 +46,19 @@ list_t *ai_star(map_t *map, node_t *start, node_t *end){
   open_arr[(int)start_ind.x][(int)start_ind.y] = true;
   g_vals[(int)start_ind.x][(int)start_ind.y] = 0;
   bool done = false;
+  // Main loop. run until no more nodes in the queue and the end has been found
   while(sl_size(open) > 0 && !done){
+    // Get next node (lowest priority/distance) and calc coord in backing arr
     node_t *curr = (node_t *) sl_dequeue(open);
     vector_t inds = map_ind_from_pos(map, body_get_centroid(curr->node->body));
     open_arr[(int)inds.x][(int)inds.y] = false;
     double old_dist = priorities[(int)inds.x][(int)inds.y];
+    // If we have end, exit
     if(node_compare(curr, end)){
       done = true;
       break;
     }
+    // Check neighbors of current node
     for(size_t i = 0; i < curr->num_neighbors; i++){
       node_t *node = curr->neighbors[i];
       if(node == NULL)
@@ -57,6 +66,7 @@ list_t *ai_star(map_t *map, node_t *start, node_t *end){
       vector_t pos = map_ind_from_pos(map, body_get_centroid(node->node->body));
       double g = old_dist + curr->distances[i];
       double f = g + diagonal_distance(node, end);
+      // If shorter dist traveled from start, add to queue/replace priority
       if(g < g_vals[(int)pos.x][(int)pos.y]){
         parents[(int)pos.x][(int)pos.y] = curr;
         g_vals[(int)pos.x][(int)pos.y] = g;
@@ -74,11 +84,13 @@ list_t *ai_star(map_t *map, node_t *start, node_t *end){
   node_t *temp = end;
   assert(temp != NULL);
   assert(start != NULL);
+  // Reconstruct path from parents; basically a linked list
   while(temp != NULL){
     list_add(path, temp);
     vector_t pos = map_ind_from_pos(map, body_get_centroid(temp->node->body));
     temp = parents[(int)pos.x][(int)pos.y];
   }
+  // Reverse path to adjust for fact that parent reconstruction is end->start
   list_t *adj_path = list_init(100, NULL);
   for(size_t i = list_size(path); i > 0; i--){
     node_t *elem = (node_t *)list_get(path, i-1);
@@ -106,7 +118,7 @@ void ai_free(alien_t *alien){
   free(alien);
 }
 
-// returns the angle of one compared to two relative to the horizontal of the vector
+// Returns the angle of one relative to two.
 double get_angle(vector_t one, vector_t two){
   vector_t other = vec_subtract(one, two);
   double magnitude = pow(pow(other.x, 2) + pow(other.y, 2), 0.5);
@@ -114,7 +126,7 @@ double get_angle(vector_t one, vector_t two){
 }
 
 
-// should get from struct nodes and return list of node_ts
+// Helper method to extract nodes from map backing array of nodes.
 list_t *get_nodes(map_t *map, object_t *player, int stalk_radius){
   vector_t centroid = body_get_centroid(player->body);
   list_t *ans = list_init(stalk_radius * stalk_radius, NULL);
@@ -122,7 +134,7 @@ list_t *get_nodes(map_t *map, object_t *player, int stalk_radius){
   list_t *nodets = map->struct_nodes;
   for(int i = arr_ind.x - stalk_radius; i < arr_ind.x + stalk_radius; i++){
     for(int j = arr_ind.y - stalk_radius; j < arr_ind.y + stalk_radius; j++){
-      // buffer of 1 to avoid walls
+      // Buffer of 1 to avoid walls
       object_t *o;
       if(i > 0 && i < 100 -1 && j > 0 && j < 100 -1){
         o = (object_t *)arr_get(map->backing_array, i, j);
@@ -143,7 +155,8 @@ list_t *get_nodes(map_t *map, object_t *player, int stalk_radius){
   return ans;
 }
 
-//TODO: add so cannot see if player in hiding spot
+// Helper method to determine if player is withing alien's vision radius AND
+// line of vision is not blocked. Can be blocked by walls and hiding spots.
 bool ai_can_see_player(map_t *map, alien_t *alien, int stalk_radius){
   if(is_hiding(map) || vec_distance(body_get_centroid(alien->alien->body),
     body_get_centroid(alien->player->body)) > VISION_RADIUS){
@@ -153,7 +166,7 @@ bool ai_can_see_player(map_t *map, alien_t *alien, int stalk_radius){
     list_t *nodes = get_nodes(map, alien->alien, VISION_RADIUS);
     double angle = get_angle(body_get_centroid(alien->player->body),
       body_get_centroid(alien->alien->body));
-    // hiding spots
+    // Hiding spots
     for(size_t i = 0; i < list_size(nodes); i++){
       node_t *node = (node_t *) list_get(nodes, i);
       if(strcmp(node->node->type, "dumpster") == 0 || strcmp(node->node->type, "locker") == 0){
@@ -180,7 +193,7 @@ bool ai_can_see_player(map_t *map, alien_t *alien, int stalk_radius){
       }
     }
     list_free(nodes);
-    // walls
+    // Walls
     angle = get_angle(body_get_centroid(alien->player->body),
       body_get_centroid(alien->alien->body));
     list_t *walls = map->walls;
@@ -211,7 +224,7 @@ bool ai_can_see_player(map_t *map, alien_t *alien, int stalk_radius){
   return false;
 }
 
-// moves alien toward given dest at given speed
+// Helper method that moves alien toward a specific destination at input speed.
 void direct_alien(body_t *alien, vector_t dest, double velocity){
   vector_t dir = vec_subtract(dest, body_get_centroid(alien));
   dir = vec_multiply(1/vec_distance(body_get_centroid(alien), dest), dir);
@@ -219,6 +232,7 @@ void direct_alien(body_t *alien, vector_t dest, double velocity){
   body_set_velocity(alien, dir);
 }
 
+// Shuffles a list. To make alien's stalking more realistic.
 list_t *shuffle(list_t *arr){
   srand(time(0));
   for(size_t i = 0; i < list_size(arr); ++i){
@@ -230,7 +244,8 @@ list_t *shuffle(list_t *arr){
   return arr;
 }
 
-// map is 100x100, each box is worth 10x10. assuming already in player radius
+// Helper creates next path for the alien from the nodes in the given radius.
+// Calls A* multiple times to create a path between several chosen destination nodes.
 void ai_create_next_path(map_t *map, alien_t *alien, int stalk_radius){
   object_t *player = alien->player;
   list_t *temp_path = list_init(MAX_PATH, NULL);
@@ -241,7 +256,7 @@ void ai_create_next_path(map_t *map, alien_t *alien, int stalk_radius){
     node_t *path_elem = (node_t *) list_get(path_extension, i);
     list_add(temp_path, path_elem);
   }
-  // first connect last node to first node here
+  // First connect last node of old path to first node of new path here
   node_t *first = NULL;
   if(list_size(path) == 0){
     vector_t ind = map_ind_from_pos(map, body_get_centroid(alien->alien->body));
@@ -256,7 +271,7 @@ void ai_create_next_path(map_t *map, alien_t *alien, int stalk_radius){
     list_add(path, next);
   }
   list_free(vals);
-  // connect rest of nodes
+  // Connect rest of nodes
   for(size_t i = 1; i < list_size(temp_path)-1; i++){
     node_t *one = (node_t *)list_get(temp_path, i - 1);
     node_t *two = (node_t *)list_get(temp_path, i);
@@ -273,6 +288,7 @@ void ai_create_next_path(map_t *map, alien_t *alien, int stalk_radius){
 
 void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
   if(ai_can_see_player(map, alien, stalk_radius)){
+    // Actively chasing the player
     basic_follow(map, VEL_CHASE);
     vector_t p_cent = body_get_centroid(map->player->body);
     vector_t inds = map_ind_from_pos(map, p_cent);
@@ -281,7 +297,9 @@ void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
     alien->player_last_seen = last;
     alien->is_moving_toward_node = true;
     return;
-  } else if(alien->is_chasing_player){
+  }
+  else if(alien->is_chasing_player){
+    // If was chasing but lost sight, go to last seen position
     list_clear(alien->path);
     vector_t a_cent = body_get_centroid(map->alien->body);
     vector_t inds = map_ind_from_pos(map, a_cent);
@@ -297,6 +315,7 @@ void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
     return;
   }
   else{
+    // Normal stalking action
     alien->player_last_seen = NULL;
     alien->is_chasing_player = false;
     // Realistically only at the start of the game
@@ -309,6 +328,7 @@ void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
       return;
     }
     if(alien->is_moving_toward_node){
+        // Make sure alien knows when at node and move on to next one in path
         vector_t n_pos = body_get_centroid(((node_t *)list_get(alien->path, 0))->node->body);
         direct_alien(alien->alien->body, n_pos, VEL_STALK);
         vector_t a_pos = body_get_centroid(alien->alien->body);
@@ -317,6 +337,8 @@ void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
         }
       }
       else{
+        // Buffers to "look around" when at a node...this doesn't really do
+        // anything at the moment. game is hard enough without this feature.
         if(alien->wait_time + tick >= LOOK_TIME){
           direct_alien(alien->alien->body, body_get_centroid(((node_t *)list_get(alien->path, 0))->node->body), VEL_STALK);
           alien->wait_time = 0;
@@ -331,7 +353,7 @@ void ai_stalk(map_t *map, alien_t *alien, int stalk_radius, double tick){
   }
 }
 
-// follows the player
+// Follows the player.
 void basic_follow(map_t *map, double vel){
   direct_alien(map->alien->body, body_get_centroid(map->player->body), vel);
 }

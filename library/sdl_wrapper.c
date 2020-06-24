@@ -178,9 +178,7 @@ void sdl_init(vector_t min, vector_t max) {
     zoom = 1;
     center = vec_multiply(0.5, vec_add(min, max));
     max_diff = vec_multiply(zoom, vec_subtract(max, center));
-    // max_diff = vec_subtract(max, center);
     SDL_Init(SDL_INIT_EVERYTHING);
-    // ttf_init();
     window =
         SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                          WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE);
@@ -259,19 +257,6 @@ void sdl_draw_polygon(list_t *points, rgb_color_t color) {
 }
 
 void sdl_show(void) {
-    // Draw boundary lines
-    // vector_t window_center = get_window_center();
-    // vector_t max = vec_add(center, max_diff), min = vec_subtract(center, max_diff);
-    // vector_t max_pixel = get_window_position(max, window_center),
-    //          min_pixel = get_window_position(min, window_center);
-    // SDL_Rect *boundary = malloc(sizeof(*boundary));
-    // boundary->x = min_pixel.x;
-    // boundary->y = max_pixel.y;
-    // boundary->w = max_pixel.x - min_pixel.x;
-    // boundary->h = min_pixel.y - max_pixel.y;
-    // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    // SDL_RenderDrawRect(renderer, boundary);
-    // free(boundary);
     SDL_RenderPresent(renderer);
 }
 

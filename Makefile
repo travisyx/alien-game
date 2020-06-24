@@ -5,7 +5,6 @@ CC = clang
 # -Wall turns on all warnings
 # -g adds filenames and line numbers to the executable for useful stack traces
 # -fno-omit-frame-pointer allows stack traces to be generated
-#   (take CS 24 for a full explanation)
 # -fsanitize=address enables asan
 CFLAGS = -Iinclude -Wall -g -fno-omit-frame-pointer -fsanitize=address
 # Compiler flag that links the program with the math library
@@ -24,7 +23,6 @@ STUDENT_LIBS = vector list sorted_list\
 	 body scene \
 	polygon forces collision object map ailien
 
-# STUDENT_TESTS = $(subst .c,, $(subst tests/student/,,$(wildcard tests/student/*.c)))
 
 
 # List of compiled .o files corresponding to STUDENT_LIBS, e.g. "out/vector.o".
@@ -33,7 +31,6 @@ STUDENT_LIBS = vector list sorted_list\
 STUDENT_OBJS = $(addprefix out/,$(STUDENT_LIBS:=.o))
 # List of test suite executables, e.g. "bin/test_suite_vector"
 # TEST_BINS = $(addprefix bin/test_suite_,$(STUDENT_LIBS)) bin/student_tests $(addprefix bin/,$(STUDENT_TESTS))
-# TEST_BINS = bin/student_tests $(addprefix bin/,$(STUDENT_TESTS))
 # List of demo executables, i.e. "bin/bounce".
 DEMO_BINS = $(addprefix bin/,$(DEMOS))
 # All executables (the concatenation of TEST_BINS and DEMO_BINS)
@@ -105,8 +102,12 @@ bin/%: out/demo-%.o out/sdl_wrapper.o $(STUDENT_OBJS)
 clean:
 	rm -f out/* bin/*
 
+# if already made, this will run the game.
+run:
+	./bin/game
+
 # This special rule tells Make that "all", "clean", and "test" are rules
 # that don't build a file.
-.PHONY: all clean #test
+.PHONY: all clean run #test
 # Tells Make not to delete the .o files after the executable is built
 .PRECIOUS: out/%.o out/demo-%.o

@@ -1,7 +1,7 @@
 #include "scene.h"
 
 const size_t NUM_BODIES = 50;
-const size_t NUM_FORCE_TS = 1; //3 * NUM_BODIES;
+const size_t NUM_FORCE_TS = 1;
 
 typedef struct scene {
     list_t *bodies;
@@ -39,7 +39,7 @@ void scene_add_body(scene_t *scene, body_t *body) {
 }
 
 void scene_remove_body(scene_t *scene, size_t index) {
-    // body_free(list_remove(scene->bodies, index)); // now in tick
+    // The body free is now in tick
     body_t *body = scene_get_body(scene, index);
     body_remove(body);
     list_remove(scene->bodies, index);
@@ -49,10 +49,6 @@ void scene_remove_body(scene_t *scene, size_t index) {
 // Deprecated
 void scene_add_force_creator(scene_t *scene, force_creator_t forcer, void *aux,
                              free_func_t freer) {
-    // force_t *force = force_init(forcer, aux, freer);
-    // list_add(scene->forces, force);
-    // scene_add_bodies_force_creator(scene, forcer, aux, ((aux_t *)aux)->bodies, freer);
-    // above line can't really work bc aux_t not defined here, so cannot get bodies out of it
     exit(6);
 }
 
@@ -78,10 +74,10 @@ force_t *force_init(force_creator_t func, void *aux, list_t *bodies, free_func_t
 }
 
 void force_free(void *force){
+  // Shouldn't free bodies
   free_func_t freer = ((force_t *)force)->aux_free;
   freer(((force_t *)force)->aux);
   free(((force_t *)force));
-  // shouldn't free bodies
 }
 
 bool force_is_removed(force_t *force, body_t *rem){
@@ -128,7 +124,6 @@ void scene_tick(scene_t *scene, double dt) {
       void *aux = force->aux;
       func(aux);
     }
-    // update(scene);
     for (size_t i = 0; i < scene_bodies(scene); i++) {
         body_tick(scene_get_body(scene, i), dt);
     }

@@ -45,7 +45,6 @@ void *body_get_info(body_t *body);
  *
  * @param body a pointer to a body returned from body_init()
  */
-
 void body_free(void *body);
 
 /**
